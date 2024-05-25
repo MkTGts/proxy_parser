@@ -2,16 +2,40 @@ import requests
 from bs4 import BeautifulSoup
 import sqlite3
 from fake_useragent import UserAgent
+import functools
 
 
 
 all_list = []  # под список словарей с проксями
 
-def db_writer():
-    connection = sqlite3.connect('proxy_base.db')
-    cursor = connection.cursor
+        
+def db_creater() -> None:  # создание базы и таблицы
+    connection = sqlite3.connect('proxy_base.db')  # коннект к базе
+    cursor = connection.cursor()  # создание курсора
 
-    cursor.ex
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Proxys (
+                   id INTEGER PRIMARY KEY,
+                   IP TEXT,
+                   country TEXT,            
+                   type TEXT
+    )''')
+
+    connection.commit()
+    connection.close()
+
+
+def db_writer(all_list: list) -> None:  # записывает прокси в базу
+    connection = sqlite3.connect('proxy_base.db')
+    cursor = connection.cursor()
+
+    for i in all_list:
+        tup = (i['ip'], i['country'], i['type'])
+        cursor.execute('INSERT INTO Proxys (IP, country, type) VALUES (?, ?, ?)', tup)
+    
+    connection.commit()
+    connection.close()
+    
+
 
 
 def pars(n: int) -> list:  # подается номер текущей страницы
@@ -37,8 +61,12 @@ def pars(n: int) -> list:  # подается номер текущей стра
     return all_list
 
 
+db_creater()
+
 for i in range(1, 19):
     pars(i)
+
+db_writer(all_list)
 
 
 
