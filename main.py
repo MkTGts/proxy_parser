@@ -7,12 +7,22 @@ import functools
 
 
 all_list = []  # под список словарей с проксями
-
         
-def db_creater() -> None:  # создание базы и таблицы
-    connection = sqlite3.connect('proxy_base.db')  # коннект к базе
-    cursor = connection.cursor()  # создание курсора
+def decoratar_open_close(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        connection = sqlite3.connect('proxy_base.db')
+        cursor = connection.cursor()
 
+        func(cursor)
+
+        connection.commit()
+        connection.close()
+    return wrapper
+
+
+@decoratar_open_close
+def db_creater(cursor) -> None:  # создание базы и таблицы
     cursor.execute('''CREATE TABLE IF NOT EXISTS Proxys (
                    id INTEGER PRIMARY KEY,
                    IP TEXT,
@@ -20,20 +30,14 @@ def db_creater() -> None:  # создание базы и таблицы
                    type TEXT
     )''')
 
-    connection.commit()
-    connection.close()
 
-
-def db_writer(all_list: list) -> None:  # записывает прокси в базу
-    connection = sqlite3.connect('proxy_base.db')
-    cursor = connection.cursor()
-
+@decoratar_open_close
+def db_writer(cursor) -> None:  # записывает прокси в базу
+    global all_list
     for i in all_list:
         tup = (i['ip'], i['country'], i['type'])
         cursor.execute('INSERT INTO Proxys (IP, country, type) VALUES (?, ?, ?)', tup)
-    
-    connection.commit()
-    connection.close()
+
     
 
 
@@ -66,7 +70,7 @@ db_creater()
 for i in range(1, 19):
     pars(i)
 
-db_writer(all_list)
+db_writer()
 
 
 
